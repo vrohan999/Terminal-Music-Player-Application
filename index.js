@@ -30,5 +30,25 @@ ui.showSongList(songs);
 // --- Key input ---
 
 handleKey.startListening(function (key) {
-  ui.showMessage('Key pressed: "' + key.trim() + '" — commands not yet implemented.');
+  const num = parseInt(key.trim(), 10);
+
+  if (isNaN(num) || num < 1 || num > songs.length) {
+    ui.showMessage('Enter a number between 1 and ' + songs.length + '.');
+    return;
+  }
+
+  const songName = songs[num - 1];
+  const filePath = path.join(SONGS_DIR, songName + '.mp3');
+
+  ui.showMessage('▶  Now playing: ' + songName);
+
+  player.play(filePath, {
+    onFinish: function () {
+      ui.showMessage('✔  Finished: ' + songName);
+    },
+    onError: function (err) {
+      ui.showMessage('✖  Playback error: ' + err.message);
+    }
+  });
 });
+
