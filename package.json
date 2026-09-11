@@ -1,0 +1,12 @@
+{
+  "name": "terminal-music-player",
+  "version": "1.0.0",
+  "description": "A simple terminal-based music player built with Node.js",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": ["music", "player", "terminal", "cli"],
+  "author": "",
+  "license": "ISC"
+}
