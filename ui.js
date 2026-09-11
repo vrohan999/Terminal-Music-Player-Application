@@ -11,8 +11,25 @@ function showTitle() {
   console.log();
 }
 
+function showSongList(songs) {
+  if (songs.length === 0) {
+    console.log('  No songs found. Add .mp3 files to the songs/ folder.');
+    console.log();
+    return;
+  }
+
+  console.log('  Available Songs:');
+  console.log();
+  songs.forEach(function (name, index) {
+    console.log('  ' + (index + 1) + '. ' + name);
+  });
+  console.log();
+  console.log('  Enter a song number to play.');
+  console.log();
+}
+
 function showMessage(message) {
   console.log('  ' + message);
 }
 
-module.exports = { clearScreen, showTitle, showMessage };
+module.exports = { clearScreen, showTitle, showSongList, showMessage };
