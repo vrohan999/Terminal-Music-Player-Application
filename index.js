@@ -27,28 +27,54 @@ ui.clearScreen();
 ui.showTitle();
 ui.showSongList(songs);
 
-// --- Key input ---
+// --- Command handler ---
 
-handleKey.startListening(function (key) {
-  const num = parseInt(key.trim(), 10);
+function onCommand(input) {
+  const num = parseInt(input, 10);
 
-  if (isNaN(num) || num < 1 || num > songs.length) {
-    ui.showMessage('Enter a number between 1 and ' + songs.length + '.');
+  if (!isNaN(num)) {
+    if (num < 1 || num > songs.length) {
+      ui.showMessage('Invalid number. Enter 1–' + songs.length + '.');
+      return;
+    }
+    const songName = songs[num - 1];
+    const filePath = path.join(SONGS_DIR, songName + '.mp3');
+    ui.showMessage('Playing: ' + songName);
+    player.play(filePath, {
+      onFinish: function () {
+        ui.showMessage('Finished: ' + songName);
+        handleKey.prompt();
+      },
+      onError: function (err) {
+        ui.showMessage('Playback error: ' + err.message);
+        handleKey.prompt();
+      }
+    });
     return;
   }
 
-  const songName = songs[num - 1];
-  const filePath = path.join(SONGS_DIR, songName + '.mp3');
+  switch (input) {
+    case 's':
+      if (player.isPlaying()) {
+        player.stop();
+        ui.showMessage('Song stopped.');
+      } else {
+        ui.showMessage('No song is playing.');
+      }
+      break;
+    case 'h':
+      ui.showHelp();
+      break;
+    case 'q':
+      ui.showMessage('Goodbye!');
+      player.stop();
+      process.exit(0);
+      break;
+    default:
+      ui.showMessage('Unknown command "' + input + '". Press h for help.');
+  }
+}
 
-  ui.showMessage('▶  Now playing: ' + songName);
+// --- Start listening ---
 
-  player.play(filePath, {
-    onFinish: function () {
-      ui.showMessage('✔  Finished: ' + songName);
-    },
-    onError: function (err) {
-      ui.showMessage('✖  Playback error: ' + err.message);
-    }
-  });
-});
-
+handleKey.startListening(onCommand);

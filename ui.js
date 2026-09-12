@@ -28,8 +28,19 @@ function showSongList(songs) {
   console.log();
 }
 
+function showHelp() {
+  console.log();
+  console.log('  Commands:');
+  console.log('  [number]  Play a song');
+  console.log('  s         Stop playback');
+  console.log('  h         Show this help');
+  console.log('  q         Quit');
+  console.log();
+}
+
 function showMessage(message) {
   console.log('  ' + message);
 }
 
-module.exports = { clearScreen, showTitle, showSongList, showMessage };
+module.exports = { clearScreen, showTitle, showSongList, showHelp, showMessage };
+

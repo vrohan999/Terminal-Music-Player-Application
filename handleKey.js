@@ -1,22 +1,47 @@
 // handleKey.js — user input/commands
 
-function startListening(onKey) {
-  // Raw mode delivers individual keypresses instead of buffered lines
-  if (process.stdin.isTTY) {
-    process.stdin.setRawMode(true);
-  }
+const readline = require('readline');
 
-  process.stdin.resume();
-  process.stdin.setEncoding('utf8');
+let rl = null;
 
-  process.stdin.on('data', function (key) {
-    if (key === '\u0003') process.exit(); // Ctrl+C
-    onKey(key);
+function startListening(onCommand) {
+  rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    prompt: '> '
+  });
+
+  rl.prompt();
+
+  rl.on('line', function (line) {
+    const input = line.trim().toLowerCase();
+    if (input !== '') {
+      onCommand(input);
+    }
+    rl.prompt();
+  });
+
+  // Ctrl+C
+  rl.on('SIGINT', function () {
+    onCommand('q');
+  });
+
+  // Ctrl+D / stream closed
+  rl.on('close', function () {
+    onCommand('q');
   });
 }
 
-function stopListening() {
-  process.stdin.pause();
+// Re-display the prompt (used after async messages print to the terminal)
+function prompt() {
+  if (rl) rl.prompt(true);
 }
 
-module.exports = { startListening, stopListening };
+function stopListening() {
+  if (rl) {
+    rl.close();
+    rl = null;
+  }
+}
+
+module.exports = { startListening, prompt, stopListening };
