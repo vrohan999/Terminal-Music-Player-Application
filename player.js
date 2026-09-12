@@ -11,8 +11,15 @@ const STATE = {
 let currentProcess = null;
 let state = STATE.STOPPED;
 
+// Incremented on every play() call. The onFinish closure captures this value
+// and compares it before firing — stale callbacks from killed processes are ignored.
+let generation = 0;
+
 function play(filePath, callbacks) {
-  stop(); // handles PAUSED → kill safely, resets state
+  stop(); // handles PAUSED → SIGCONT → kill safely
+
+  generation++;
+  const myGeneration = generation;
 
   currentProcess = spawn('afplay', [filePath]);
   state = STATE.PLAYING;
@@ -20,7 +27,8 @@ function play(filePath, callbacks) {
   currentProcess.on('close', function (code) {
     currentProcess = null;
     state = STATE.STOPPED;
-    if (code === 0 && callbacks && callbacks.onFinish) {
+    // Only treat as a natural finish if this is still the active session
+    if (code === 0 && myGeneration === generation && callbacks && callbacks.onFinish) {
       callbacks.onFinish();
     }
   });
@@ -28,7 +36,7 @@ function play(filePath, callbacks) {
   currentProcess.on('error', function (err) {
     currentProcess = null;
     state = STATE.STOPPED;
-    if (callbacks && callbacks.onError) {
+    if (myGeneration === generation && callbacks && callbacks.onError) {
       callbacks.onError(err);
     }
   });
@@ -36,21 +44,20 @@ function play(filePath, callbacks) {
 
 function pause() {
   if (state !== STATE.PLAYING) return false;
-  currentProcess.kill('SIGSTOP'); // freeze the afplay process
+  currentProcess.kill('SIGSTOP');
   state = STATE.PAUSED;
   return true;
 }
 
 function resume() {
   if (state !== STATE.PAUSED) return false;
-  currentProcess.kill('SIGCONT'); // unfreeze the afplay process
+  currentProcess.kill('SIGCONT');
   state = STATE.PLAYING;
   return true;
 }
 
 function stop() {
   if (currentProcess) {
-    // A SIGSTOP'd process won't receive SIGTERM — resume it first
     if (state === STATE.PAUSED) currentProcess.kill('SIGCONT');
     currentProcess.kill();
     currentProcess = null;

@@ -21,11 +21,40 @@ function loadSongs() {
 
 const songs = loadSongs();
 
-// --- Startup ---
+// --- Application state ---
 
-ui.clearScreen();
-ui.showTitle();
-ui.showSongList(songs);
+let currentIndex = -1; // -1 = nothing played yet
+
+// --- Song playback ---
+
+function playSong(index) {
+  if (songs.length === 0) {
+    ui.showMessage('No songs available.');
+    return;
+  }
+
+  // Wrap around: works for both positive overflow and negative values
+  currentIndex = ((index % songs.length) + songs.length) % songs.length;
+
+  const songName = songs[currentIndex];
+  const filePath = path.join(SONGS_DIR, songName + '.mp3');
+  const capturedIndex = currentIndex;
+
+  ui.showMessage('Playing: ' + songName);
+
+  player.play(filePath, {
+    onFinish: function () {
+      ui.showMessage('Finished: ' + songName);
+      // Auto-advance to next song using the index captured at play time
+      playSong(capturedIndex + 1);
+      handleKey.prompt();
+    },
+    onError: function (err) {
+      ui.showMessage('Playback error: ' + err.message);
+      handleKey.prompt();
+    }
+  });
+}
 
 // --- Command handler ---
 
@@ -33,27 +62,27 @@ function onCommand(input) {
   const num = parseInt(input, 10);
 
   if (!isNaN(num)) {
+    if (songs.length === 0) {
+      ui.showMessage('No songs available.');
+      return;
+    }
     if (num < 1 || num > songs.length) {
       ui.showMessage('Invalid number. Enter 1–' + songs.length + '.');
       return;
     }
-    const songName = songs[num - 1];
-    const filePath = path.join(SONGS_DIR, songName + '.mp3');
-    ui.showMessage('Playing: ' + songName);
-    player.play(filePath, {
-      onFinish: function () {
-        ui.showMessage('Finished: ' + songName);
-        handleKey.prompt();
-      },
-      onError: function (err) {
-        ui.showMessage('Playback error: ' + err.message);
-        handleKey.prompt();
-      }
-    });
+    playSong(num - 1);
     return;
   }
 
   switch (input) {
+    case 'n':
+      // If nothing played yet, start at the first song; otherwise advance
+      playSong(currentIndex < 0 ? 0 : currentIndex + 1);
+      break;
+    case 'b':
+      // If nothing played yet, start at the last song; otherwise go back
+      playSong(currentIndex < 0 ? songs.length - 1 : currentIndex - 1);
+      break;
     case 'p':
       if (player.getState() === 'PLAYING') {
         player.pause();
@@ -95,6 +124,10 @@ function onCommand(input) {
   }
 }
 
-// --- Start listening ---
+// --- Startup ---
+
+ui.clearScreen();
+ui.showTitle();
+ui.showSongList(songs);
 
 handleKey.startListening(onCommand);

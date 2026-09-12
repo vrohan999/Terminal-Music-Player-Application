@@ -32,6 +32,8 @@ function showHelp() {
   console.log();
   console.log('  Commands:');
   console.log('  [number]  Play a song');
+  console.log('  n         Next song');
+  console.log('  b         Previous song');
   console.log('  p         Pause');
   console.log('  r         Resume');
   console.log('  s         Stop');
