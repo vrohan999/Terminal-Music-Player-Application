@@ -54,8 +54,28 @@ function onCommand(input) {
   }
 
   switch (input) {
+    case 'p':
+      if (player.getState() === 'PLAYING') {
+        player.pause();
+        ui.showMessage('Paused.');
+      } else if (player.getState() === 'PAUSED') {
+        ui.showMessage('Already paused.');
+      } else {
+        ui.showMessage('Nothing is playing.');
+      }
+      break;
+    case 'r':
+      if (player.getState() === 'PAUSED') {
+        player.resume();
+        ui.showMessage('Resumed.');
+      } else if (player.getState() === 'PLAYING') {
+        ui.showMessage('Already playing.');
+      } else {
+        ui.showMessage('Nothing to resume.');
+      }
+      break;
     case 's':
-      if (player.isPlaying()) {
+      if (player.getState() !== 'STOPPED') {
         player.stop();
         ui.showMessage('Song stopped.');
       } else {

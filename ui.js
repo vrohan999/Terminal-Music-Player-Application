@@ -32,7 +32,9 @@ function showHelp() {
   console.log();
   console.log('  Commands:');
   console.log('  [number]  Play a song');
-  console.log('  s         Stop playback');
+  console.log('  p         Pause');
+  console.log('  r         Resume');
+  console.log('  s         Stop');
   console.log('  h         Show this help');
   console.log('  q         Quit');
   console.log();
