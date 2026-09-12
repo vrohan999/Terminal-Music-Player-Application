@@ -1,50 +1,60 @@
 // ui.js — terminal interface and status messages
 
+const DIVIDER = '─'.repeat(42);
+
 function clearScreen() {
   process.stdout.write('\x1Bc');
 }
 
-function showTitle() {
-  console.log('=========================================');
-  console.log('        🎵  Terminal Music Player  🎵   ');
-  console.log('=========================================');
-  console.log();
-}
+function render(state) {
+  clearScreen();
 
-function showSongList(songs) {
-  if (songs.length === 0) {
+  // Title
+  console.log('╔' + '═'.repeat(42) + '╗');
+  console.log('║       🎵  TERMINAL MUSIC PLAYER          ║');
+  console.log('╚' + '═'.repeat(42) + '╝');
+  console.log();
+
+  // Song list
+  console.log('  Songs');
+  console.log('  ' + DIVIDER);
+  console.log();
+
+  if (state.songs.length === 0) {
     console.log('  No songs found. Add .mp3 files to the songs/ folder.');
-    console.log();
-    return;
+  } else {
+    state.songs.forEach(function (name, i) {
+      const marker = (i === state.currentIndex) ? '▶ ' : '  ';
+      console.log('  ' + marker + (i + 1) + '. ' + name);
+    });
   }
+  console.log();
 
-  console.log('  Available Songs:');
+  // Now playing / status
+  const songName = state.currentIndex >= 0 ? state.songs[state.currentIndex] : '—';
+  const statusIcon = state.playerState === 'PLAYING' ? '▶  PLAYING'
+    : state.playerState === 'PAUSED' ? '⏸  PAUSED'
+      : '■  STOPPED';
+
+  console.log('  Now Playing : ' + songName);
+  console.log('  Status      : ' + statusIcon);
   console.log();
-  songs.forEach(function (name, index) {
-    console.log('  ' + (index + 1) + '. ' + name);
-  });
+
+  // Commands
+  console.log('  Commands');
+  console.log('  ' + DIVIDER);
   console.log();
-  console.log('  Enter a song number to play.');
+  console.log('  [number]  Play song    n  Next song');
+  console.log('  p         Pause        b  Previous song');
+  console.log('  r         Resume       s  Stop');
+  console.log('  h         Refresh      q  Quit');
   console.log();
+
+  // Status message
+  if (state.message) {
+    console.log('  ' + state.message);
+    console.log();
+  }
 }
 
-function showHelp() {
-  console.log();
-  console.log('  Commands:');
-  console.log('  [number]  Play a song');
-  console.log('  n         Next song');
-  console.log('  b         Previous song');
-  console.log('  p         Pause');
-  console.log('  r         Resume');
-  console.log('  s         Stop');
-  console.log('  h         Show this help');
-  console.log('  q         Quit');
-  console.log();
-}
-
-function showMessage(message) {
-  console.log('  ' + message);
-}
-
-module.exports = { clearScreen, showTitle, showSongList, showHelp, showMessage };
-
+module.exports = { clearScreen, render };

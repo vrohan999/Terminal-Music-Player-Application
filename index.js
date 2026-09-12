@@ -11,9 +11,7 @@ const player = require('./player');
 const SONGS_DIR = path.join(__dirname, 'songs');
 
 function loadSongs() {
-  if (!fs.existsSync(SONGS_DIR)) {
-    return [];
-  }
+  if (!fs.existsSync(SONGS_DIR)) return [];
   return fs.readdirSync(SONGS_DIR)
     .filter(file => path.extname(file).toLowerCase() === '.mp3')
     .map(file => path.basename(file, '.mp3'));
@@ -23,37 +21,45 @@ const songs = loadSongs();
 
 // --- Application state ---
 
-let currentIndex = -1; // -1 = nothing played yet
+const state = {
+  songs,
+  currentIndex: -1,
+  playerState: 'STOPPED',
+  message: ''
+};
+
+// Sync player state into the shared state object, then redraw
+function render(message) {
+  state.playerState = player.getState();
+  state.message = message !== undefined ? message : state.message;
+  ui.render(state);
+}
 
 // --- Song playback ---
 
 function playSong(index) {
   if (songs.length === 0) {
-    ui.showMessage('No songs available.');
+    render('No songs available.');
     return;
   }
 
-  // Wrap around: works for both positive overflow and negative values
-  currentIndex = ((index % songs.length) + songs.length) % songs.length;
-
-  const songName = songs[currentIndex];
+  state.currentIndex = ((index % songs.length) + songs.length) % songs.length;
+  const capturedIndex = state.currentIndex;
+  const songName = songs[state.currentIndex];
   const filePath = path.join(SONGS_DIR, songName + '.mp3');
-  const capturedIndex = currentIndex;
-
-  ui.showMessage('Playing: ' + songName);
 
   player.play(filePath, {
     onFinish: function () {
-      ui.showMessage('Finished: ' + songName);
-      // Auto-advance to next song using the index captured at play time
       playSong(capturedIndex + 1);
       handleKey.prompt();
     },
     onError: function (err) {
-      ui.showMessage('Playback error: ' + err.message);
+      render('Playback error: ' + err.message);
       handleKey.prompt();
     }
   });
+
+  render(''); // playerState is now PLAYING; message clears on new song
 }
 
 // --- Command handler ---
@@ -62,12 +68,9 @@ function onCommand(input) {
   const num = parseInt(input, 10);
 
   if (!isNaN(num)) {
-    if (songs.length === 0) {
-      ui.showMessage('No songs available.');
-      return;
-    }
+    if (songs.length === 0) { render('No songs available.'); return; }
     if (num < 1 || num > songs.length) {
-      ui.showMessage('Invalid number. Enter 1–' + songs.length + '.');
+      render('Invalid number. Enter 1–' + songs.length + '.');
       return;
     }
     playSong(num - 1);
@@ -76,58 +79,54 @@ function onCommand(input) {
 
   switch (input) {
     case 'n':
-      // If nothing played yet, start at the first song; otherwise advance
-      playSong(currentIndex < 0 ? 0 : currentIndex + 1);
+      playSong(state.currentIndex < 0 ? 0 : state.currentIndex + 1);
       break;
     case 'b':
-      // If nothing played yet, start at the last song; otherwise go back
-      playSong(currentIndex < 0 ? songs.length - 1 : currentIndex - 1);
+      playSong(state.currentIndex < 0 ? songs.length - 1 : state.currentIndex - 1);
       break;
     case 'p':
       if (player.getState() === 'PLAYING') {
         player.pause();
-        ui.showMessage('Paused.');
+        render('Paused.');
       } else if (player.getState() === 'PAUSED') {
-        ui.showMessage('Already paused.');
+        render('Already paused.');
       } else {
-        ui.showMessage('Nothing is playing.');
+        render('Nothing is playing.');
       }
       break;
     case 'r':
       if (player.getState() === 'PAUSED') {
         player.resume();
-        ui.showMessage('Resumed.');
+        render('Resumed.');
       } else if (player.getState() === 'PLAYING') {
-        ui.showMessage('Already playing.');
+        render('Already playing.');
       } else {
-        ui.showMessage('Nothing to resume.');
+        render('Nothing to resume.');
       }
       break;
     case 's':
       if (player.getState() !== 'STOPPED') {
         player.stop();
-        ui.showMessage('Song stopped.');
+        render('Song stopped.');
       } else {
-        ui.showMessage('No song is playing.');
+        render('No song is playing.');
       }
       break;
     case 'h':
-      ui.showHelp();
+      render('');
       break;
     case 'q':
-      ui.showMessage('Goodbye!');
       player.stop();
+      ui.clearScreen();
+      console.log('\n  Goodbye!\n');
       process.exit(0);
       break;
     default:
-      ui.showMessage('Unknown command "' + input + '". Press h for help.');
+      render('Unknown command "' + input + '". Press h for help.');
   }
 }
 
 // --- Startup ---
 
-ui.clearScreen();
-ui.showTitle();
-ui.showSongList(songs);
-
+render('');
 handleKey.startListening(onCommand);
