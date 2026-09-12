@@ -3,6 +3,7 @@
 const readline = require('readline');
 
 let rl = null;
+let quitting = false; // guard against double-firing onCommand('q')
 
 function startListening(onCommand) {
   rl = readline.createInterface({
@@ -18,21 +19,28 @@ function startListening(onCommand) {
     if (input !== '') {
       onCommand(input);
     }
+    // Re-show the prompt after every command (synchronous commands return here)
     rl.prompt();
   });
 
   // Ctrl+C
   rl.on('SIGINT', function () {
-    onCommand('q');
+    if (!quitting) {
+      quitting = true;
+      onCommand('q');
+    }
   });
 
-  // Ctrl+D / stream closed
+  // Ctrl+D or stream closed — only fire if not already quitting
   rl.on('close', function () {
-    onCommand('q');
+    if (!quitting) {
+      quitting = true;
+      onCommand('q');
+    }
   });
 }
 
-// Re-display the prompt (used after async messages print to the terminal)
+// Call this after async events (e.g. a song finishing) to re-show the prompt
 function prompt() {
   if (rl) rl.prompt(true);
 }
