@@ -6,7 +6,15 @@
   "scripts": {
     "start": "node index.js"
   },
-  "keywords": ["music", "player", "terminal", "cli"],
+  "keywords": [
+    "music",
+    "player",
+    "terminal",
+    "cli"
+  ],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "chalk": "^4.1.2"
+  }
 }
